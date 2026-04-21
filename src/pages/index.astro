@@ -1,0 +1,85 @@
+---
+import NavigationStart from "./components/navigationStart.astro"
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Astro</title>
+	</head>
+	<body>
+		<NavigationStart></NavigationStart>
+		<article>
+			<div class="contentContainer">
+				<h1>Comienza tu cambio físico <strong>ya</strong></h1>
+				<p>Dejanos ayudarte a cumplir tus objetivos de la manera más eficiente posible</p>
+				<a href="/register" class="registerButton" >Regitrate ya</a>
+			</div>
+		</article>
+	</body>
+</html>
+
+
+<style>
+	html, body {
+		height: 100%;
+		width: 100%;
+	}
+	body {
+		min-height: 100%;
+		position:absolute;
+		background-image: url("/assets/landingBackGround2.png");
+		background-position: center;
+		background-size: cover;
+		background-repeat: no-repeat;
+	}
+	article {
+		width: 100%;
+	}
+	.contentContainer {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		
+		min-height: 80vh; 
+	}
+
+	.contentContainer h1 {
+		font-size: clamp(2.5rem, 6vw, 4.5rem);
+		color: #ffffff;
+		margin-bottom: 1rem;
+		font-weight: 800;
+		line-height: 1.1;
+	}
+	.contentContainer h1 strong {
+		background: linear-gradient(135.2deg, #52B788 0.6%, #2D6A4F 98.1%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.contentContainer p {
+		font-size: 1.25rem;
+		color: rgba(255, 255, 255, 0.8);
+		max-width: 600px;
+		margin-bottom: 2.5rem;
+		line-height: 1.6;
+	}
+	.registerButton {
+		display: inline-block;
+		padding: 1rem 2.5rem;
+		background: #2D6A4F;
+		color: white;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 1.1rem;
+		border-radius: 50px;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: 0 4px 15px rgba(45, 106, 79, 0.3);
+	}
+</style>
