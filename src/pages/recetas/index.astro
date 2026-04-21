@@ -1,0 +1,127 @@
+---
+import NavigationApp from "../components/navigationApp.astro";
+import AppStyles from "../components/appStyles.astro";
+---
+
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Recetas — NutriTrack</title>
+	</head>
+	<body>
+		<AppStyles />
+		<NavigationApp active="recetas" />
+
+		<main class="app">
+			<section class="panel">
+				<h1>Recetas</h1>
+				<p class="muted">Explora ideas saludables adaptadas a tus objetivos.</p>
+
+				<div class="searchBar">
+					<input
+						type="search"
+						id="search"
+						placeholder="Buscar por título…"
+						autocomplete="off"
+					/>
+				</div>
+
+				<p id="empty" class="muted" hidden>No hay recetas que coincidan.</p>
+				<div id="grid" class="recipe-grid"></div>
+			</section>
+		</main>
+
+		<script>
+			import { api, requireAuth } from "../../scripts/api";
+
+			requireAuth();
+
+			type Receta = {
+				id_receta: number;
+				titulo: string;
+				calorias: number;
+				ingredientes_resumen: string;
+			};
+
+			const grid = document.getElementById("grid")!;
+			const empty = document.getElementById("empty")!;
+			const searchInput = document.getElementById("search") as HTMLInputElement;
+
+			const render = (items: Receta[]) => {
+				if (items.length === 0) {
+					grid.innerHTML = "";
+					empty.removeAttribute("hidden");
+					return;
+				}
+				empty.setAttribute("hidden", "");
+				grid.innerHTML = items.map(r => `
+					<a class="card" href="/recetas/detail?id=${r.id_receta}">
+						<div class="card-kcal">${r.calorias} kcal</div>
+						<h3 class="card-title">${r.titulo}</h3>
+						<p class="card-ings">${r.ingredientes_resumen}</p>
+					</a>
+				`).join("");
+			};
+
+			async function load(q = "") {
+				try {
+					const res = await api<{ items: Receta[] }>(
+						`/recetas${q ? `?q=${encodeURIComponent(q)}` : ""}`,
+						{ auth: true },
+					);
+					render(res.items);
+				} catch {
+					grid.innerHTML = `<p class="muted">No se pudieron cargar las recetas.</p>`;
+				}
+			}
+
+			let timer: number | undefined;
+			searchInput.addEventListener("input", () => {
+				window.clearTimeout(timer);
+				timer = window.setTimeout(() => load(searchInput.value.trim()), 200);
+			});
+
+			load();
+		</script>
+
+		<style>
+			.searchBar { margin: 1rem 0 1.5rem; }
+			.recipe-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+				gap: 1rem;
+			}
+			.card {
+				display: block;
+				padding: 1.25rem;
+				background: rgba(255,255,255,0.04);
+				border: 1px solid rgba(255,255,255,0.08);
+				border-radius: 16px;
+				text-decoration: none;
+				color: inherit;
+				transition: all 0.2s;
+				position: relative;
+			}
+			.card:hover {
+				background: rgba(255,255,255,0.07);
+				transform: translateY(-2px);
+				border-color: rgba(82, 183, 136, 0.5);
+			}
+			.card-kcal {
+				display: inline-block;
+				padding: 0.25rem 0.65rem;
+				background: rgba(82, 183, 136, 0.15);
+				color: #9be0be;
+				border-radius: 50px;
+				font-size: 0.78rem;
+				font-weight: 600;
+				margin-bottom: 0.6rem;
+			}
+			.card-title { margin: 0 0 0.5rem; font-size: 1.1rem; }
+			.card-ings { color: rgba(255,255,255,0.6); font-size: 0.88rem; margin: 0; line-height: 1.5; }
+		</style>
+	</body>
+</html>

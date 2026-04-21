@@ -1,0 +1,178 @@
+---
+import NavigationApp from "./components/navigationApp.astro";
+import AppStyles from "./components/appStyles.astro";
+---
+
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Dashboard — NutriTrack</title>
+	</head>
+	<body>
+		<AppStyles />
+		<NavigationApp active="dashboard" />
+
+		<main class="app">
+			<section class="hero panel">
+				<h1>Hola, <span id="userName" class="accent">—</span></h1>
+				<p class="muted">Aquí tienes tu resumen de hoy.</p>
+			</section>
+
+			<div id="noDatos" class="notice warn" hidden>
+				Aún no has introducido tus datos físicos.
+				<a href="/datos-fisicos" class="link">Complétalos ahora</a> para ver tu recomendación.
+			</div>
+
+			<section class="grid cols-3 metrics" id="metrics" hidden>
+				<div class="panel metric">
+					<div class="metric-label">Recomendación diaria</div>
+					<div class="metric-value accent"><span id="kcal">—</span> <small>kcal</small></div>
+				</div>
+				<div class="panel metric">
+					<div class="metric-label">Objetivo actual</div>
+					<div class="metric-value" id="objetivo">—</div>
+				</div>
+				<div class="panel metric">
+					<div class="metric-label">Peso actual</div>
+					<div class="metric-value"><span id="pesoActual">—</span> <small>kg</small></div>
+					<div class="metric-sub muted" id="pesoDelta"></div>
+				</div>
+			</section>
+
+			<section class="grid cols-2">
+				<div class="panel">
+					<h2>Progreso semanal</h2>
+					<svg id="chart" viewBox="0 0 320 140" class="chart"></svg>
+					<p class="muted" id="chartEmpty" hidden>Registra tu peso para empezar a ver tu evolución.</p>
+				</div>
+
+				<div class="panel">
+					<h2>Accesos directos</h2>
+					<div class="shortcuts">
+						<a class="btn" href="/dieta">Plan de comidas</a>
+						<a class="btn ghost" href="/peso">Seguimiento de peso</a>
+						<a class="btn ghost" href="/recetas">Recetas</a>
+						<a class="btn ghost" href="/datos-fisicos">Editar datos físicos</a>
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<script>
+			import { api, auth, requireAuth } from "../scripts/api";
+
+			requireAuth();
+
+			const userName = document.getElementById("userName");
+			if (userName && auth.nombre) userName.textContent = auth.nombre;
+
+			type Datos = { objetivo: string; recomendacion_kcal: number; peso: number };
+			type Registro = { peso: number; fecha: string };
+
+			const objetivoLabel: Record<string, string> = {
+				perder: "Perder peso",
+				mantener: "Mantener",
+				ganar: "Ganar masa",
+			};
+
+			async function loadDashboard() {
+				let datos: Datos | null = null;
+				try {
+					datos = await api<Datos>("/datos-fisicos", { auth: true });
+				} catch (err: any) {
+					if (err?.code === "NOT_FOUND") {
+						document.getElementById("noDatos")?.removeAttribute("hidden");
+					}
+				}
+
+				if (datos) {
+					document.getElementById("metrics")?.removeAttribute("hidden");
+					document.getElementById("kcal")!.textContent = String(datos.recomendacion_kcal);
+					document.getElementById("objetivo")!.textContent = objetivoLabel[datos.objetivo] ?? datos.objetivo;
+					document.getElementById("pesoActual")!.textContent = String(datos.peso);
+				}
+
+				try {
+					const registros = await api<Registro[]>("/peso", { auth: true });
+					drawChart(registros);
+					if (registros.length >= 2 && datos) {
+						const ultimo = registros[0].peso;
+						const anterior = registros[1].peso;
+						const diff = +(ultimo - anterior).toFixed(1);
+						const signo = diff > 0 ? "+" : "";
+						document.getElementById("pesoDelta")!.textContent =
+							`Última variación: ${signo}${diff} kg`;
+					}
+				} catch { /* lista vacía o error silencioso */ }
+			}
+
+			function drawChart(registros: Registro[]) {
+				const svg = document.getElementById("chart") as SVGSVGElement | null;
+				const empty = document.getElementById("chartEmpty");
+				if (!svg) return;
+				if (registros.length < 2) {
+					svg.setAttribute("hidden", "");
+					empty?.removeAttribute("hidden");
+					return;
+				}
+				const series = [...registros].reverse().slice(-7);
+				const pesos = series.map(r => r.peso);
+				const min = Math.min(...pesos) - 0.5;
+				const max = Math.max(...pesos) + 0.5;
+				const w = 320, h = 140, pad = 20;
+				const stepX = (w - pad * 2) / (series.length - 1);
+
+				const points = series.map((r, i) => {
+					const x = pad + i * stepX;
+					const y = pad + (h - pad * 2) * (1 - (r.peso - min) / (max - min || 1));
+					return `${x.toFixed(1)},${y.toFixed(1)}`;
+				}).join(" ");
+
+				svg.innerHTML = `
+					<polyline fill="none" stroke="#52B788" stroke-width="2.5" points="${points}" />
+					${series.map((r, i) => {
+						const x = pad + i * stepX;
+						const y = pad + (h - pad * 2) * (1 - (r.peso - min) / (max - min || 1));
+						return `<circle cx="${x}" cy="${y}" r="3" fill="#fff" />`;
+					}).join("")}
+				`;
+			}
+
+			loadDashboard();
+		</script>
+
+		<style>
+			.hero { margin-bottom: 1.25rem; }
+			.metrics { margin-bottom: 1.25rem; }
+			.metric-label {
+				font-size: 0.8rem;
+				color: rgba(255,255,255,0.6);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				margin-bottom: 0.5rem;
+			}
+			.metric-value {
+				font-size: 2rem;
+				font-weight: 800;
+			}
+			.metric-value small {
+				font-size: 0.9rem;
+				font-weight: 500;
+				color: rgba(255,255,255,0.55);
+			}
+			.metric-sub { margin-top: 0.35rem; font-size: 0.85rem; }
+			.shortcuts {
+				display: flex;
+				flex-direction: column;
+				gap: 0.6rem;
+				align-items: flex-start;
+			}
+			.shortcuts .btn { width: 100%; text-align: center; }
+			.chart { width: 100%; height: auto; }
+			.link { color: #52B788; }
+		</style>
+	</body>
+</html>

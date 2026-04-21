@@ -13,6 +13,10 @@ import NavigationStart from "./components/navigationStart.astro"
 	</head>
 	<body>
 		<NavigationStart></NavigationStart>
+		<script>
+			import { auth } from "../scripts/api";
+			if (auth.isAuthenticated) window.location.href = "/dashboard";
+		</script>
 		<article>
 			<div class="contentContainer">
 				<h1>Comienza tu cambio físico <strong>ya</strong></h1>

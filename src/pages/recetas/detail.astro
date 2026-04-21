@@ -1,0 +1,100 @@
+---
+import NavigationApp from "../components/navigationApp.astro";
+import AppStyles from "../components/appStyles.astro";
+---
+
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Receta — NutriTrack</title>
+	</head>
+	<body>
+		<AppStyles />
+		<NavigationApp active="recetas" />
+
+		<main class="app">
+			<section class="panel">
+				<a href="/recetas" class="back">← Volver a recetas</a>
+
+				<div id="loading" class="muted">Cargando…</div>
+				<div id="notFound" class="notice warn" hidden>Receta no encontrada.</div>
+
+				<article id="detail" hidden>
+					<div class="kcal-badge"><span id="rKcal">—</span> kcal</div>
+					<h1 id="rTitulo">—</h1>
+
+					<div class="grid cols-2">
+						<div>
+							<h2>Ingredientes</h2>
+							<ul id="rIngs"></ul>
+						</div>
+						<div>
+							<h2>Preparación</h2>
+							<p id="rPrep" class="prep"></p>
+						</div>
+					</div>
+				</article>
+			</section>
+		</main>
+
+		<script>
+			import { api, requireAuth } from "../../scripts/api";
+
+			requireAuth();
+
+			type Detalle = {
+				id_receta: number;
+				titulo: string;
+				calorias: number;
+				ingredientes: string[];
+				preparacion: string;
+			};
+
+			const id = new URLSearchParams(window.location.search).get("id") ?? "";
+			if (!id) window.location.href = "/recetas";
+
+			(async () => {
+				try {
+					const r = await api<Detalle>(`/recetas/${encodeURIComponent(id)}`, { auth: true });
+					document.getElementById("loading")!.setAttribute("hidden", "");
+					document.getElementById("detail")!.removeAttribute("hidden");
+					document.title = `${r.titulo} — NutriTrack`;
+					document.getElementById("rTitulo")!.textContent = r.titulo;
+					document.getElementById("rKcal")!.textContent = String(r.calorias);
+					document.getElementById("rPrep")!.textContent = r.preparacion;
+					document.getElementById("rIngs")!.innerHTML = r.ingredientes
+						.map(i => `<li>${i}</li>`).join("");
+				} catch {
+					document.getElementById("loading")!.setAttribute("hidden", "");
+					document.getElementById("notFound")!.removeAttribute("hidden");
+				}
+			})();
+		</script>
+
+		<style>
+			.back {
+				display: inline-block;
+				margin-bottom: 1rem;
+				color: rgba(255,255,255,0.65);
+				text-decoration: none;
+				font-size: 0.9rem;
+			}
+			.back:hover { color: #52B788; }
+			.kcal-badge {
+				display: inline-block;
+				padding: 0.3rem 0.75rem;
+				background: rgba(82, 183, 136, 0.15);
+				color: #9be0be;
+				border-radius: 50px;
+				font-size: 0.85rem;
+				font-weight: 600;
+				margin-bottom: 0.6rem;
+			}
+			ul { padding-left: 1.2rem; line-height: 1.8; color: rgba(255,255,255,0.85); }
+			.prep { line-height: 1.7; color: rgba(255,255,255,0.85); }
+		</style>
+	</body>
+</html>

@@ -1,0 +1,140 @@
+---
+import NavigationApp from "./components/navigationApp.astro";
+import AppStyles from "./components/appStyles.astro";
+---
+
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Dieta — NutriTrack</title>
+	</head>
+	<body>
+		<AppStyles />
+		<NavigationApp active="dieta" />
+
+		<main class="app">
+			<section class="panel">
+				<h1>Tu plan de dieta</h1>
+				<p class="muted">Calculado a partir de tus datos físicos y tu objetivo.</p>
+
+				<div id="loading" class="muted">Cargando…</div>
+				<div id="noDatos" class="notice warn" hidden>
+					Necesitas introducir tus datos físicos antes de ver tu dieta.
+					Redirigiendo a <a class="link" href="/datos-fisicos">Datos físicos</a>…
+				</div>
+
+				<div id="plan" hidden>
+					<div class="hero grid cols-2">
+						<div>
+							<div class="metric-label">Objetivo</div>
+							<div class="metric-value" id="objetivo">—</div>
+						</div>
+						<div>
+							<div class="metric-label">Calorías recomendadas</div>
+							<div class="metric-value accent"><span id="kcal">—</span> <small>kcal</small></div>
+						</div>
+					</div>
+
+					<h2>Reparto por comidas</h2>
+					<div class="grid cols-3">
+						<div class="meal"><div class="meal-name">Desayuno</div><div class="meal-kcal"><span id="mDesayuno">—</span> kcal</div></div>
+						<div class="meal"><div class="meal-name">Almuerzo</div><div class="meal-kcal"><span id="mAlmuerzo">—</span> kcal</div></div>
+						<div class="meal"><div class="meal-name">Merienda</div><div class="meal-kcal"><span id="mMerienda">—</span> kcal</div></div>
+					</div>
+					<div class="grid cols-3">
+						<div class="meal"><div class="meal-name">Cena</div><div class="meal-kcal"><span id="mCena">—</span> kcal</div></div>
+					</div>
+
+					<h2>Macronutrientes</h2>
+					<div class="grid cols-3">
+						<div class="macro"><div class="macro-name">Proteínas</div><div class="macro-val"><span id="mP">—</span> g</div></div>
+						<div class="macro"><div class="macro-name">Carbohidratos</div><div class="macro-val"><span id="mC">—</span> g</div></div>
+						<div class="macro"><div class="macro-name">Grasas</div><div class="macro-val"><span id="mG">—</span> g</div></div>
+					</div>
+
+					<div class="actions">
+						<a href="/recetas" class="btn">Ver recetas</a>
+						<a href="/datos-fisicos" class="btn ghost">Cambiar datos</a>
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<script>
+			import { api, requireAuth } from "../scripts/api";
+
+			requireAuth();
+
+			type Plan = {
+				recomendacion_kcal: number;
+				objetivo: string;
+				reparto: { desayuno: number; almuerzo: number; merienda: number; cena: number };
+				macros: { proteinas_g: number; carbohidratos_g: number; grasas_g: number };
+			};
+
+			const objetivoLabel: Record<string, string> = {
+				perder: "Perder peso", mantener: "Mantener", ganar: "Ganar masa",
+			};
+
+			(async () => {
+				const loading = document.getElementById("loading");
+				try {
+					const plan = await api<Plan>("/dieta", { auth: true });
+					loading?.setAttribute("hidden", "");
+					document.getElementById("plan")?.removeAttribute("hidden");
+
+					document.getElementById("objetivo")!.textContent = objetivoLabel[plan.objetivo] ?? plan.objetivo;
+					document.getElementById("kcal")!.textContent = String(plan.recomendacion_kcal);
+					document.getElementById("mDesayuno")!.textContent = String(plan.reparto.desayuno);
+					document.getElementById("mAlmuerzo")!.textContent = String(plan.reparto.almuerzo);
+					document.getElementById("mMerienda")!.textContent = String(plan.reparto.merienda);
+					document.getElementById("mCena")!.textContent = String(plan.reparto.cena);
+					document.getElementById("mP")!.textContent = String(plan.macros.proteinas_g);
+					document.getElementById("mC")!.textContent = String(plan.macros.carbohidratos_g);
+					document.getElementById("mG")!.textContent = String(plan.macros.grasas_g);
+				} catch (err: any) {
+					loading?.setAttribute("hidden", "");
+					if (err?.code === "NOT_FOUND") {
+						document.getElementById("noDatos")?.removeAttribute("hidden");
+						setTimeout(() => { window.location.href = "/datos-fisicos"; }, 1500);
+					}
+				}
+			})();
+		</script>
+
+		<style>
+			.hero { margin-bottom: 1.5rem; }
+			.metric-label {
+				font-size: 0.8rem;
+				color: rgba(255,255,255,0.6);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				margin-bottom: 0.4rem;
+			}
+			.metric-value { font-size: 1.8rem; font-weight: 800; }
+			.metric-value small { font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.55); }
+			.meal, .macro {
+				padding: 1rem 1.25rem;
+				background: rgba(255,255,255,0.04);
+				border: 1px solid rgba(255,255,255,0.08);
+				border-radius: 14px;
+			}
+			.meal-name, .macro-name {
+				font-size: 0.82rem;
+				color: rgba(255,255,255,0.65);
+				text-transform: uppercase;
+				letter-spacing: 0.04em;
+			}
+			.meal-kcal, .macro-val {
+				font-size: 1.4rem;
+				font-weight: 700;
+				margin-top: 0.3rem;
+			}
+			.actions { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+			.link { color: #52B788; }
+		</style>
+	</body>
+</html>

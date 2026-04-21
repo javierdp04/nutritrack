@@ -1,0 +1,196 @@
+---
+import NavigationApp from "./components/navigationApp.astro";
+import AppStyles from "./components/appStyles.astro";
+---
+
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Datos físicos — NutriTrack</title>
+	</head>
+	<body>
+		<AppStyles />
+		<NavigationApp active="datos" />
+
+		<main class="app">
+			<section class="panel">
+				<h1>Tus datos físicos</h1>
+				<p class="muted">Necesitamos estos datos para calcular tu recomendación calórica. Puedes actualizarlos cuando quieras.</p>
+
+				<form id="datosForm" novalidate>
+					<div class="grid cols-2">
+						<div class="field">
+							<label for="edad">Edad (años)</label>
+							<input type="number" id="edad" name="edad" min="15" max="100" step="1" required />
+							<small class="error" data-error-for="edad"></small>
+						</div>
+						<div class="field">
+							<label for="genero">Género</label>
+							<select id="genero" name="genero" required>
+								<option value="">Selecciona…</option>
+								<option value="hombre">Hombre</option>
+								<option value="mujer">Mujer</option>
+							</select>
+							<small class="error" data-error-for="genero"></small>
+						</div>
+						<div class="field">
+							<label for="peso">Peso (kg)</label>
+							<input type="number" id="peso" name="peso" min="30" max="250" step="0.1" required />
+							<small class="error" data-error-for="peso"></small>
+						</div>
+						<div class="field">
+							<label for="altura">Altura (cm)</label>
+							<input type="number" id="altura" name="altura" min="120" max="220" step="1" required />
+							<small class="error" data-error-for="altura"></small>
+						</div>
+						<div class="field">
+							<label for="nivel_actividad">Nivel de actividad</label>
+							<select id="nivel_actividad" name="nivel_actividad" required>
+								<option value="">Selecciona…</option>
+								<option value="bajo">Bajo — sedentario</option>
+								<option value="medio">Medio — ejercicio moderado</option>
+								<option value="alto">Alto — ejercicio intenso</option>
+							</select>
+							<small class="error" data-error-for="nivel_actividad"></small>
+						</div>
+						<div class="field">
+							<label for="objetivo">Objetivo</label>
+							<select id="objetivo" name="objetivo" required>
+								<option value="">Selecciona…</option>
+								<option value="perder">Perder peso</option>
+								<option value="mantener">Mantener</option>
+								<option value="ganar">Ganar masa</option>
+							</select>
+							<small class="error" data-error-for="objetivo"></small>
+						</div>
+					</div>
+
+					<small class="error formError" data-error-for="form"></small>
+
+					<div class="actions">
+						<button type="submit" class="btn">Guardar y calcular</button>
+					</div>
+				</form>
+			</section>
+
+			<section class="panel result" id="result" hidden>
+				<h2>Tu recomendación</h2>
+				<div class="grid cols-3">
+					<div>
+						<div class="result-label">TMB</div>
+						<div class="result-value"><span id="rTmb">—</span> <small>kcal</small></div>
+					</div>
+					<div>
+						<div class="result-label">GET</div>
+						<div class="result-value"><span id="rGet">—</span> <small>kcal</small></div>
+					</div>
+					<div>
+						<div class="result-label">Recomendación diaria</div>
+						<div class="result-value accent"><span id="rKcal">—</span> <small>kcal</small></div>
+					</div>
+				</div>
+				<div class="actions">
+					<a href="/dieta" class="btn">Ver plan de dieta</a>
+				</div>
+			</section>
+		</main>
+
+		<script>
+			import { api, requireAuth } from "../scripts/api";
+
+			requireAuth();
+
+			type Datos = {
+				edad: number; peso: number; altura: number;
+				genero: string; nivel_actividad: string; objetivo: string;
+				tmb: number; get: number; recomendacion_kcal: number;
+			};
+
+			const form = document.getElementById("datosForm") as HTMLFormElement;
+
+			const setError = (field: string, message: string) => {
+				const el = document.querySelector(`[data-error-for="${field}"]`);
+				if (el) el.textContent = message;
+				const input = document.getElementById(field);
+				if (input) input.classList.toggle("invalid", Boolean(message));
+			};
+
+			const setValue = (id: string, value: string | number) => {
+				const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+				if (el) el.value = String(value);
+			};
+
+			const showResult = (tmb: number, g: number, kcal: number) => {
+				document.getElementById("result")?.removeAttribute("hidden");
+				document.getElementById("rTmb")!.textContent = String(Math.round(tmb));
+				document.getElementById("rGet")!.textContent = String(Math.round(g));
+				document.getElementById("rKcal")!.textContent = String(kcal);
+			};
+
+			api<Datos>("/datos-fisicos", { auth: true }).then(d => {
+				setValue("edad", d.edad);
+				setValue("peso", d.peso);
+				setValue("altura", d.altura);
+				setValue("genero", d.genero);
+				setValue("nivel_actividad", d.nivel_actividad);
+				setValue("objetivo", d.objetivo);
+				showResult(d.tmb, d.get, d.recomendacion_kcal);
+			}).catch(() => { /* sin datos aún */ });
+
+			const validate = (d: Record<string, any>) => {
+				let ok = true;
+				["edad","peso","altura","genero","nivel_actividad","objetivo","form"].forEach(f => setError(f, ""));
+
+				if (!(d.edad >= 15 && d.edad <= 100)) { setError("edad", "Edad entre 15 y 100."); ok = false; }
+				if (!(d.peso >= 30 && d.peso <= 250)) { setError("peso", "Peso entre 30 y 250 kg."); ok = false; }
+				if (!(d.altura >= 120 && d.altura <= 220)) { setError("altura", "Altura entre 120 y 220 cm."); ok = false; }
+				if (!d.genero) { setError("genero", "Selecciona un género."); ok = false; }
+				if (!d.nivel_actividad) { setError("nivel_actividad", "Selecciona un nivel."); ok = false; }
+				if (!d.objetivo) { setError("objetivo", "Selecciona un objetivo."); ok = false; }
+				return ok;
+			};
+
+			form?.addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const fd = new FormData(form);
+				const data = {
+					edad: Number(fd.get("edad")),
+					peso: Number(fd.get("peso")),
+					altura: Number(fd.get("altura")),
+					genero: String(fd.get("genero") ?? ""),
+					nivel_actividad: String(fd.get("nivel_actividad") ?? ""),
+					objetivo: String(fd.get("objetivo") ?? ""),
+				};
+				if (!validate(data)) return;
+
+				try {
+					const res = await api<{ tmb: number; get: number; recomendacion_kcal: number }>(
+						"/datos-fisicos", { method: "POST", auth: true, body: JSON.stringify(data) },
+					);
+					showResult(res.tmb, res.get, res.recomendacion_kcal);
+					window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+				} catch (err: any) {
+					setError("form", err?.error ?? "No se pudieron guardar los datos.");
+				}
+			});
+		</script>
+
+		<style>
+			.actions { margin-top: 1.25rem; display: flex; gap: 0.75rem; }
+			.result { margin-top: 1.25rem; }
+			.result-label {
+				font-size: 0.8rem;
+				color: rgba(255,255,255,0.6);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				margin-bottom: 0.5rem;
+			}
+			.result-value { font-size: 1.8rem; font-weight: 800; }
+			.result-value small { font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.55); }
+			.formError { text-align: center; margin: 1rem 0 0; }
+		</style>
+	</body>
+</html>

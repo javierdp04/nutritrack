@@ -9,7 +9,7 @@ import NavigationStart from "./components/navigationStart.astro"
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Registro — NutriTrack</title>
+		<title>Iniciar sesión — NutriTrack</title>
 	</head>
 	<body>
 		<NavigationStart />
@@ -17,26 +17,11 @@ import NavigationStart from "./components/navigationStart.astro"
 		<main>
 			<section class="card">
 				<header class="cardHeader">
-					<h1>Crea tu cuenta</h1>
-					<p>Empieza a seguir tu nutrición en menos de un minuto</p>
+					<h1>Bienvenido de vuelta</h1>
+					<p>Inicia sesión para continuar tu progreso</p>
 				</header>
 
-				<form id="registerForm" novalidate>
-					<div class="field">
-						<label for="nombre">Nombre</label>
-						<input
-							type="text"
-							id="nombre"
-							name="nombre"
-							minlength="3"
-							maxlength="20"
-							autocomplete="name"
-							placeholder="Tu nombre"
-							required
-						/>
-						<small class="error" data-error-for="nombre"></small>
-					</div>
-
+				<form id="loginForm" novalidate>
 					<div class="field">
 						<label for="email">Email</label>
 						<input
@@ -56,34 +41,23 @@ import NavigationStart from "./components/navigationStart.astro"
 							type="password"
 							id="password"
 							name="password"
-							minlength="8"
-							autocomplete="new-password"
-							placeholder="Mínimo 8 caracteres"
+							autocomplete="current-password"
+							placeholder="Tu contraseña"
 							required
 						/>
 						<small class="error" data-error-for="password"></small>
 					</div>
 
-					<div class="field">
-						<label for="passwordConfirm">Repite la contraseña</label>
-						<input
-							type="password"
-							id="passwordConfirm"
-							name="passwordConfirm"
-							minlength="8"
-							autocomplete="new-password"
-							placeholder="Repite tu contraseña"
-							required
-						/>
-						<small class="error" data-error-for="passwordConfirm"></small>
+					<div class="forgotRow">
+						<a href="#" class="forgotLink">¿Olvidaste tu contraseña?</a>
 					</div>
 
 					<small class="error formError" data-error-for="form"></small>
 
-					<button type="submit" class="submitButton">Crear cuenta</button>
+					<button type="submit" class="submitButton">Entrar</button>
 
-					<p class="loginLink">
-						¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
+					<p class="registerLink">
+						¿Aún no tienes cuenta? <a href="/register">Regístrate</a>
 					</p>
 				</form>
 			</section>
@@ -94,7 +68,7 @@ import NavigationStart from "./components/navigationStart.astro"
 
 			if (auth.isAuthenticated) window.location.href = "/dashboard";
 
-			const form = document.getElementById("registerForm") as HTMLFormElement;
+			const form = document.getElementById("loginForm") as HTMLFormElement;
 
 			const setError = (field: string, message: string) => {
 				const el = document.querySelector(`[data-error-for="${field}"]`);
@@ -105,23 +79,15 @@ import NavigationStart from "./components/navigationStart.astro"
 
 			const validate = (data: Record<string, string>) => {
 				let ok = true;
-				["nombre", "email", "password", "passwordConfirm", "form"].forEach(f => setError(f, ""));
+				["email", "password", "form"].forEach(f => setError(f, ""));
 
-				if (data.nombre.length < 3 || data.nombre.length > 20) {
-					setError("nombre", "El nombre debe tener entre 3 y 20 caracteres.");
-					ok = false;
-				}
 				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 				if (!emailRegex.test(data.email)) {
 					setError("email", "Introduce un email válido.");
 					ok = false;
 				}
-				if (data.password.length < 8) {
-					setError("password", "La contraseña debe tener al menos 8 caracteres.");
-					ok = false;
-				}
-				if (data.password !== data.passwordConfirm) {
-					setError("passwordConfirm", "Las contraseñas no coinciden.");
+				if (data.password.length === 0) {
+					setError("password", "Introduce tu contraseña.");
 					ok = false;
 				}
 				return ok;
@@ -131,35 +97,20 @@ import NavigationStart from "./components/navigationStart.astro"
 				e.preventDefault();
 				const fd = new FormData(form);
 				const data = {
-					nombre: String(fd.get("nombre") ?? "").trim(),
 					email: String(fd.get("email") ?? "").trim(),
 					password: String(fd.get("password") ?? ""),
-					passwordConfirm: String(fd.get("passwordConfirm") ?? ""),
 				};
-
 				if (!validate(data)) return;
 
 				try {
-					await api("/register", {
+					const res = await api<{ token: string; rol: string; nombre: string }>("/login", {
 						method: "POST",
-						body: JSON.stringify({
-							nombre: data.nombre,
-							email: data.email,
-							password: data.password,
-						}),
+						body: JSON.stringify(data),
 					});
-					const loginRes = await api<{ token: string; rol: string; nombre: string }>("/login", {
-						method: "POST",
-						body: JSON.stringify({ email: data.email, password: data.password }),
-					});
-					auth.save(loginRes.token, loginRes.rol, loginRes.nombre);
-					window.location.href = "/datos-fisicos";
+					auth.save(res.token, res.rol, res.nombre);
+					window.location.href = res.rol === "admin" ? "/admin/usuarios" : "/dashboard";
 				} catch (err: any) {
-					if (err?.code === "CONFLICT") {
-						setError("email", "Este email ya está registrado.");
-					} else {
-						setError("form", err?.error ?? "No se pudo completar el registro.");
-					}
+					setError("form", err?.error ?? "No se pudo iniciar sesión.");
 				}
 			});
 		</script>
@@ -190,7 +141,7 @@ import NavigationStart from "./components/navigationStart.astro"
 
 	.card {
 		width: 100%;
-		max-width: 440px;
+		max-width: 420px;
 		padding: 2.5rem 2rem;
 		background: rgba(255, 255, 255, 0.04);
 		backdrop-filter: blur(16px) saturate(160%);
@@ -262,7 +213,24 @@ import NavigationStart from "./components/navigationStart.astro"
 		font-size: 0.8rem;
 		color: #ff8a8a;
 	}
-	.formError { text-align: center; }
+	.formError {
+		text-align: center;
+	}
+
+	.forgotRow {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: -0.3rem;
+	}
+	.forgotLink {
+		font-size: 0.82rem;
+		color: rgba(255, 255, 255, 0.65);
+		text-decoration: none;
+	}
+	.forgotLink:hover {
+		color: #52B788;
+		text-decoration: underline;
+	}
 
 	.submitButton {
 		margin-top: 0.5rem;
@@ -288,18 +256,18 @@ import NavigationStart from "./components/navigationStart.astro"
 		transform: translateY(0);
 	}
 
-	.loginLink {
+	.registerLink {
 		text-align: center;
 		font-size: 0.9rem;
 		color: rgba(255, 255, 255, 0.7);
 		margin: 0.5rem 0 0;
 	}
-	.loginLink a {
+	.registerLink a {
 		color: #52B788;
 		text-decoration: none;
 		font-weight: 600;
 	}
-	.loginLink a:hover {
+	.registerLink a:hover {
 		text-decoration: underline;
 	}
 </style>

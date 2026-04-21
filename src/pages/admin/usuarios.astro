@@ -1,0 +1,134 @@
+---
+import NavigationApp from "../components/navigationApp.astro";
+import AppStyles from "../components/appStyles.astro";
+---
+
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Admin — Usuarios — NutriTrack</title>
+	</head>
+	<body>
+		<AppStyles />
+		<NavigationApp active="admin" />
+
+		<main class="app">
+			<section class="panel">
+				<h1>Gestión de usuarios</h1>
+				<p class="muted">Solo accesible para administradores.</p>
+
+				<div id="msg" class="notice" hidden></div>
+
+				<table>
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Nombre</th>
+							<th>Email</th>
+							<th>Rol</th>
+							<th>Creado</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="tbody">
+						<tr><td colspan="6" class="muted">Cargando…</td></tr>
+					</tbody>
+				</table>
+			</section>
+		</main>
+
+		<script>
+			import { api, requireAdmin } from "../../scripts/api";
+
+			requireAdmin();
+
+			type Usuario = {
+				id_usuario: number;
+				nombre: string;
+				email: string;
+				rol: string;
+				created_at: string;
+			};
+
+			const tbody = document.getElementById("tbody")!;
+			const msg = document.getElementById("msg")!;
+
+			function showMessage(text: string, isError = false) {
+				msg.textContent = text;
+				msg.classList.toggle("error", isError);
+				msg.removeAttribute("hidden");
+				setTimeout(() => msg.setAttribute("hidden", ""), 3000);
+			}
+
+			function formatDate(iso: string): string {
+				return new Date(iso).toLocaleDateString("es-ES");
+			}
+
+			function render(usuarios: Usuario[]) {
+				if (usuarios.length === 0) {
+					tbody.innerHTML = `<tr><td colspan="6" class="muted">Sin usuarios.</td></tr>`;
+					return;
+				}
+				tbody.innerHTML = usuarios.map(u => `
+					<tr>
+						<td>${u.id_usuario}</td>
+						<td>${u.nombre}</td>
+						<td>${u.email}</td>
+						<td><span class="role role-${u.rol}">${u.rol}</span></td>
+						<td>${formatDate(u.created_at)}</td>
+						<td>
+							<button class="btn danger small" data-delete="${u.id_usuario}" data-name="${u.nombre}">
+								Eliminar
+							</button>
+						</td>
+					</tr>
+				`).join("");
+
+				tbody.querySelectorAll<HTMLButtonElement>("button[data-delete]").forEach(btn => {
+					btn.addEventListener("click", async () => {
+						const id = btn.dataset.delete;
+						const name = btn.dataset.name;
+						if (!confirm(`¿Eliminar a ${name}? Esta acción no se puede deshacer.`)) return;
+						try {
+							await api(`/admin/usuarios/${id}`, { method: "DELETE", auth: true });
+							showMessage(`Usuario ${name} eliminado.`);
+							load();
+						} catch (err: any) {
+							showMessage(err?.error ?? "No se pudo eliminar el usuario.", true);
+						}
+					});
+				});
+			}
+
+			async function load() {
+				try {
+					const usuarios = await api<Usuario[]>("/admin/usuarios", { auth: true });
+					render(usuarios);
+				} catch (err: any) {
+					tbody.innerHTML = `<tr><td colspan="6" class="muted">${err?.error ?? "Error al cargar."}</td></tr>`;
+				}
+			}
+
+			load();
+		</script>
+
+		<style>
+			.small { padding: 0.4rem 0.9rem; font-size: 0.82rem; }
+			.role {
+				display: inline-block;
+				padding: 0.15rem 0.55rem;
+				border-radius: 50px;
+				font-size: 0.78rem;
+				background: rgba(255,255,255,0.08);
+				color: rgba(255,255,255,0.8);
+			}
+			.role-admin {
+				background: rgba(82, 183, 136, 0.15);
+				color: #9be0be;
+			}
+		</style>
+	</body>
+</html>
