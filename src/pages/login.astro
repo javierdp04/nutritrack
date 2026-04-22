@@ -64,36 +64,17 @@ import NavigationStart from "./components/navigationStart.astro"
 		</main>
 
 		<script>
-			import { api, auth } from "../scripts/api";
+			import { api, auth, redirectIfAuthenticated } from "../scripts/api";
+			import { EMAIL_REGEX, setError, clearErrors } from "../scripts/formUtils";
 
-			if (auth.isAuthenticated) window.location.href = "/dashboard";
+			redirectIfAuthenticated();
 
 			const form = document.getElementById("loginForm") as HTMLFormElement;
 
-			const setError = (field: string, message: string) => {
-				const el = document.querySelector(`[data-error-for="${field}"]`);
-				if (el) el.textContent = message;
-				const input = document.getElementById(field);
-				if (input) input.classList.toggle("invalid", Boolean(message));
-			};
-
-			const validate = (data: Record<string, string>) => {
-				let ok = true;
-				["email", "password", "form"].forEach(f => setError(f, ""));
-
-				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-				if (!emailRegex.test(data.email)) {
-					setError("email", "Introduce un email válido.");
-					ok = false;
-				}
-				if (data.password.length === 0) {
-					setError("password", "Introduce tu contraseña.");
-					ok = false;
-				}
-				return ok;
-			};
-
 			form?.addEventListener("submit", async (e) => {
+				/*
+				e: Evento que se emite
+				*/
 				e.preventDefault();
 				const fd = new FormData(form);
 				const data = {
@@ -113,6 +94,23 @@ import NavigationStart from "./components/navigationStart.astro"
 					setError("form", err?.error ?? "No se pudo iniciar sesión.");
 				}
 			});
+
+			const validate = (data: Record<string, string>) => {
+				let ok = true;
+				clearErrors(["email", "password", "form"]);
+
+				if (!EMAIL_REGEX.test(data.email)) {
+					setError("email", "Introduce un email válido.");
+					ok = false;
+				}
+				if (data.password.length === 0) {
+					setError("password", "Introduce tu contraseña.");
+					ok = false;
+				}
+				return ok;
+			};
+
+			
 		</script>
 	</body>
 </html>

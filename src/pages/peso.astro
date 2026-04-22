@@ -74,6 +74,7 @@ import AppStyles from "./components/appStyles.astro";
 
 		<script>
 			import { api, requireAuth } from "../scripts/api";
+			import { setError } from "../scripts/formUtils"
 
 			requireAuth();
 
@@ -82,20 +83,20 @@ import AppStyles from "./components/appStyles.astro";
 			const form = document.getElementById("pesoForm") as HTMLFormElement;
 			const okMsg = document.getElementById("ok");
 
-			const setError = (field: string, message: string) => {
-				const el = document.querySelector(`[data-error-for="${field}"]`);
-				if (el) el.textContent = message;
-				const input = document.getElementById(field);
-				if (input) input.classList.toggle("invalid", Boolean(message));
-			};
-
+			
 			function formatDelta(delta: number): string {
+				/*
+				delta: Diferencia entre dos elementos (ej: pesos)
+				*/
 				if (delta === 0) return "Sin cambios";
 				const signo = delta > 0 ? "+" : "";
 				return `${signo}${delta.toFixed(1)} kg`;
 			}
 
 			function render(registros: Registro[]) {
+				/*
+				registro: Contiene el registro de datos del usuario
+				*/
 				const tbody = document.getElementById("tbody")!;
 				if (registros.length === 0) {
 					tbody.innerHTML = `<tr><td colspan="3" class="muted">Sin registros todavía.</td></tr>`;

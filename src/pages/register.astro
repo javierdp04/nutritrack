@@ -90,44 +90,17 @@ import NavigationStart from "./components/navigationStart.astro"
 		</main>
 
 		<script>
-			import { api, auth } from "../scripts/api";
+			import { api, auth, redirectIfAuthenticated } from "../scripts/api";
+			import { EMAIL_REGEX, setError, clearErrors } from "../scripts/formUtils";
 
-			if (auth.isAuthenticated) window.location.href = "/dashboard";
+			redirectIfAuthenticated();
 
 			const form = document.getElementById("registerForm") as HTMLFormElement;
 
-			const setError = (field: string, message: string) => {
-				const el = document.querySelector(`[data-error-for="${field}"]`);
-				if (el) el.textContent = message;
-				const input = document.getElementById(field);
-				if (input) input.classList.toggle("invalid", Boolean(message));
-			};
-
-			const validate = (data: Record<string, string>) => {
-				let ok = true;
-				["nombre", "email", "password", "passwordConfirm", "form"].forEach(f => setError(f, ""));
-
-				if (data.nombre.length < 3 || data.nombre.length > 20) {
-					setError("nombre", "El nombre debe tener entre 3 y 20 caracteres.");
-					ok = false;
-				}
-				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-				if (!emailRegex.test(data.email)) {
-					setError("email", "Introduce un email válido.");
-					ok = false;
-				}
-				if (data.password.length < 8) {
-					setError("password", "La contraseña debe tener al menos 8 caracteres.");
-					ok = false;
-				}
-				if (data.password !== data.passwordConfirm) {
-					setError("passwordConfirm", "Las contraseñas no coinciden.");
-					ok = false;
-				}
-				return ok;
-			};
-
 			form?.addEventListener("submit", async (e) => {
+				/*
+				e: evento que se emite
+				*/
 				e.preventDefault();
 				const fd = new FormData(form);
 				const data = {
@@ -162,6 +135,32 @@ import NavigationStart from "./components/navigationStart.astro"
 					}
 				}
 			});
+
+			const validate = (data: Record<string, string>) => {
+				/*
+				data: Objeto con atributos relacionados con el formulario que envia el usuario
+				*/
+				let ok = true;
+				clearErrors(["nombre", "email", "password", "passwordConfirm", "form"]);
+
+				if (data.nombre.length < 3 || data.nombre.length > 20) {
+					setError("nombre", "El nombre debe tener entre 3 y 20 caracteres.");
+					ok = false;
+				}
+				if (!EMAIL_REGEX.test(data.email)) {
+					setError("email", "Introduce un email válido.");
+					ok = false;
+				}
+				if (data.password.length < 8) {
+					setError("password", "La contraseña debe tener al menos 8 caracteres.");
+					ok = false;
+				}
+				if (data.password !== data.passwordConfirm) {
+					setError("passwordConfirm", "Las contraseñas no coinciden.");
+					ok = false;
+				}
+				return ok;
+			};
 		</script>
 	</body>
 </html>

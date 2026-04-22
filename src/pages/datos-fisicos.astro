@@ -100,7 +100,7 @@ import AppStyles from "./components/appStyles.astro";
 
 		<script>
 			import { api, requireAuth } from "../scripts/api";
-
+			import { setError , setValue} from "../scripts/formUtils"
 			requireAuth();
 
 			type Datos = {
@@ -111,19 +111,12 @@ import AppStyles from "./components/appStyles.astro";
 
 			const form = document.getElementById("datosForm") as HTMLFormElement;
 
-			const setError = (field: string, message: string) => {
-				const el = document.querySelector(`[data-error-for="${field}"]`);
-				if (el) el.textContent = message;
-				const input = document.getElementById(field);
-				if (input) input.classList.toggle("invalid", Boolean(message));
-			};
-
-			const setValue = (id: string, value: string | number) => {
-				const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
-				if (el) el.value = String(value);
-			};
-
 			const showResult = (tmb: number, g: number, kcal: number) => {
+				/*
+				tmb: Tasa metabolica basal
+				g: Gasto calorico total
+				kcal: Consumo calorico recomendado
+				*/
 				document.getElementById("result")?.removeAttribute("hidden");
 				document.getElementById("rTmb")!.textContent = String(Math.round(tmb));
 				document.getElementById("rGet")!.textContent = String(Math.round(g));

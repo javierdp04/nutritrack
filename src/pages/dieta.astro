@@ -86,15 +86,20 @@ import AppStyles from "./components/appStyles.astro";
 					loading?.setAttribute("hidden", "");
 					document.getElementById("plan")?.removeAttribute("hidden");
 
-					document.getElementById("objetivo")!.textContent = objetivoLabel[plan.objetivo] ?? plan.objetivo;
-					document.getElementById("kcal")!.textContent = String(plan.recomendacion_kcal);
-					document.getElementById("mDesayuno")!.textContent = String(plan.reparto.desayuno);
-					document.getElementById("mAlmuerzo")!.textContent = String(plan.reparto.almuerzo);
-					document.getElementById("mMerienda")!.textContent = String(plan.reparto.merienda);
-					document.getElementById("mCena")!.textContent = String(plan.reparto.cena);
-					document.getElementById("mP")!.textContent = String(plan.macros.proteinas_g);
-					document.getElementById("mC")!.textContent = String(plan.macros.carbohidratos_g);
-					document.getElementById("mG")!.textContent = String(plan.macros.grasas_g);
+					const data = [
+						{id: "objetivo", content: objetivoLabel[plan.objetivo] ?? plan.objetivo},
+						{id: "kcal", content: String(plan.recomendacion_kcal)},
+						{id: "mDesayuno", content: String(plan.reparto.desayuno)},
+						{id: "mAlmuerzo", content: String(plan.reparto.almuerzo)},
+						{id: "mMerienda", content: String(plan.reparto.merienda)},
+						{id: "mCena", content: String(plan.reparto.cena)},
+						{id: "mP", content: String(plan.macros.proteinas_g)},
+						{id: "mC", content: String(plan.macros.carbohidratos_g)},
+						{id: "mG", content: String(plan.macros.grasas_g)}
+					]
+
+					data.forEach( element => document.getElementById(element.id)!.textContent = element.content);
+					
 				} catch (err: any) {
 					loading?.setAttribute("hidden", "");
 					if (err?.code === "NOT_FOUND") {

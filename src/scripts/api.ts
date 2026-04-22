@@ -26,6 +26,10 @@ export const auth = {
 export async function api<T = unknown>(
 	path: string,
 	options: RequestInit & { auth?: boolean } = {},
+	/*
+	paht: Subruta a la que se realiza la peticion
+	options: Especificaciones de la peticion
+	*/
 ): Promise<T> {
 	const headers = new Headers(options.headers);
 	headers.set("Content-Type", "application/json");
@@ -51,6 +55,10 @@ export function requireAuth() {
 	if (!auth.isAuthenticated) {
 		window.location.href = "/login";
 	}
+}
+
+export function redirectIfAuthenticated(to = "/dashboard") {
+	if (auth.isAuthenticated) window.location.href = to;
 }
 
 export function requireAdmin() {
