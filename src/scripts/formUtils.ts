@@ -1,6 +1,9 @@
+// Utilidades para manejo de formularios, validación y manipulación del DOM.
+
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const setError = (field: string, message: string) => {
+	// Muestra mensaje de error y marca campo como inválido
 	const el = document.querySelector(`[data-error-for="${field}"]`);
 	if (el) el.textContent = message;
 	const input = document.getElementById(field);

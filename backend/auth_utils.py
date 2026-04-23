@@ -1,5 +1,5 @@
 """
-Este modulo contiene diferentes funciones para facilitar la autentificaction
+Módulo de utilidades para autenticación y autorización de usuarios.
 """
 from datetime import datetime, timedelta, timezone
 from functools import wraps

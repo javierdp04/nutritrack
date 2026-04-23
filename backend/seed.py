@@ -1,5 +1,5 @@
 """
-Este modulo se encarga de comprobar que la base de datos este en orden
+Script para poblar la base de datos con datos iniciales de recetas y usuarios de prueba.
 """
 
 from app import create_app
@@ -60,6 +60,7 @@ RECETAS = [
 
 
 def seed():
+    # Crea usuario admin si no existe y pobla recetas iniciales
     app = create_app()
     with app.app_context():
         db.create_all()

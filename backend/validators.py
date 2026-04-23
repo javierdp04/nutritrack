@@ -1,5 +1,5 @@
 """
-Este modulo contiene varias funcines para la validacion de datos
+Módulo de validación de datos de entrada para formularios y API.
 """
 
 import re
