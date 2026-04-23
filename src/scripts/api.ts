@@ -1,3 +1,5 @@
+// Utilidades para interactuar con la API del backend, incluyendo autenticación y gestión de tokens.
+
 export const API_BASE = "http://localhost:5000/api";
 
 export type ApiError = { error: string; code: string };

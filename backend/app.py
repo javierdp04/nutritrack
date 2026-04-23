@@ -1,5 +1,5 @@
 """
-Este modulo gestiona las peticiones provenientes del front-end
+Módulo principal de la aplicación Flask que maneja las rutas y endpoints de la API.
 """
 
 from flask import Flask, g, jsonify, request
@@ -88,6 +88,7 @@ def create_app(config_class=Config) -> Flask:
     @login_required
     def save_datos_fisicos():
         data = validate_datos_fisicos(request.get_json(silent=True) or {})
+        
         tmb_value = calc_tmb(data["genero"], data["peso"], data["altura"], data["edad"])
         get_value = calc_get(tmb_value, data["nivel_actividad"])
         kcal = recomendacion_kcal(get_value, data["objetivo"])

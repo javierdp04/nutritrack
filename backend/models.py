@@ -1,5 +1,5 @@
 """
-Este modulo se encarga de inicializar la base de datos y de definir las tablas que la componen
+Modelos de datos de SQLAlchemy para la aplicación NutriTrack, definiendo las tablas de la base de datos.
 """
 
 from datetime import datetime, date
@@ -52,6 +52,7 @@ class DatosFisicos(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        # Devuelve datos físicos redondeados para respuesta JSON
         return {
             "edad": self.edad,
             "peso": self.peso,

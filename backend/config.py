@@ -1,3 +1,7 @@
+"""
+Configuración de la aplicación Flask, incluyendo variables de entorno y base de datos.
+"""
+
 import os
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))

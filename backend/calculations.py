@@ -1,5 +1,5 @@
 """
-Este modulo contiene funciones que facilitan el calculo de ciertas metricas
+Módulo de cálculos nutricionales y metabólicos, incluyendo TMB y recomendaciones calóricas.
 """
 
 ACTIVITY_FACTORS = {"bajo": 1.2, "medio": 1.55, "alto": 1.725}
@@ -7,6 +7,7 @@ OBJETIVO_AJUSTE = {"perder": -500, "mantener": 0, "ganar": 400}
 
 
 def tmb(genero: str, peso: float, altura: int, edad: int) -> float:
+    # Fórmula Mifflin-St Jeor para calcular la Tasa Metabólica Basal (TMB)
     base = 10 * peso + 6.25 * altura - 5 * edad
     return base + 5 if genero == "hombre" else base - 161
 
@@ -24,12 +25,14 @@ def plan_dieta(get_value: float, objetivo: str) -> dict:
     return {
         "recomendacion_kcal": kcal,
         "objetivo": objetivo,
+        # Reparto calórico diario aproximado: desayuno 25%, almuerzo 35%, merienda 15%, cena 25%
         "reparto": {
             "desayuno": int(round(kcal * 0.25)),
             "almuerzo": int(round(kcal * 0.35)),
             "merienda": int(round(kcal * 0.15)),
             "cena": int(round(kcal * 0.25)),
         },
+        # Estimación de macronutrientes: proteínas 30%, carbohidratos 45%, grasas 25%
         "macros": {
             "proteinas_g": int(round(kcal * 0.30 / 4)),
             "carbohidratos_g": int(round(kcal * 0.45 / 4)),
