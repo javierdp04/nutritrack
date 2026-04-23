@@ -1,3 +1,7 @@
+"""
+Este modulo contiene varias funcines para la validacion de datos
+"""
+
 import re
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")

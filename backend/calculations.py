@@ -1,3 +1,7 @@
+"""
+Este modulo contiene funciones que facilitan el calculo de ciertas metricas
+"""
+
 ACTIVITY_FACTORS = {"bajo": 1.2, "medio": 1.55, "alto": 1.725}
 OBJETIVO_AJUSTE = {"perder": -500, "mantener": 0, "ganar": 400}
 

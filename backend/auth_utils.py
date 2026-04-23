@@ -1,3 +1,6 @@
+"""
+Este modulo contiene diferentes funciones para facilitar la autentificaction
+"""
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 

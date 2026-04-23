@@ -1,3 +1,7 @@
+"""
+Este modulo gestiona las peticiones provenientes del front-end
+"""
+
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 from sqlalchemy.exc import IntegrityError

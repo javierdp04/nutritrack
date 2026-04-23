@@ -1,3 +1,7 @@
+"""
+Este modulo se encarga de inicializar la base de datos y de definir las tablas que la componen
+"""
+
 from datetime import datetime, date
 from flask_sqlalchemy import SQLAlchemy
 

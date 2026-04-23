@@ -1,3 +1,7 @@
+"""
+Este modulo se encarga de comprobar que la base de datos este en orden
+"""
+
 from app import create_app
 from auth_utils import hash_password
 from models import Receta, Usuario, db
