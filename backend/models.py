@@ -2,7 +2,7 @@
 Modelos de datos de SQLAlchemy para la aplicación NutriTrack, definiendo las tablas de la base de datos.
 """
 
-from datetime import datetime, date
+from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -71,10 +71,10 @@ class RegistroPeso(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), nullable=False, index=True)
     peso = db.Column(db.Float, nullable=False)
-    fecha = db.Column(db.Date, nullable=False, default=date.today)
+    fecha = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def to_dict(self):
-        return {"peso": self.peso, "fecha": self.fecha.isoformat()}
+        return {"peso": self.peso, "fecha": self.fecha.date().isoformat()}
 
 
 class Receta(db.Model):
