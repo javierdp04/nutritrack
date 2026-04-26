@@ -1,5 +1,5 @@
 """
-Modelos de datos de SQLAlchemy para la aplicación NutriTrack, definiendo las tablas de la base de datos.
+Modelos de datos de SQLAlchemy para la aplicación NutriTrack, definiendo l  as tablas de la base de datos.
 """
 
 from datetime import datetime
