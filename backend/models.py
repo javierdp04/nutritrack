@@ -2,7 +2,7 @@
 Modelos de datos de SQLAlchemy para la aplicación NutriTrack, definiendo l  as tablas de la base de datos.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -41,7 +41,7 @@ class DatosFisicos(db.Model):
     __tablename__ = "datos_fisicos"
 
     id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id_usuario"), primary_key=True)
-    edad = db.Column(db.Integer, nullable=False)
+    fecha_nacimiento = db.Column(db.Date, nullable=False)
     peso = db.Column(db.Float, nullable=False)
     altura = db.Column(db.Integer, nullable=False)
     genero = db.Column(db.String(8), nullable=False)
@@ -51,9 +51,15 @@ class DatosFisicos(db.Model):
     get = db.Column(db.Float, nullable=False)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    @property
+    def edad(self) -> int:
+        hoy = date.today()
+        nac = self.fecha_nacimiento
+        return hoy.year - nac.year - ((hoy.month, hoy.day) < (nac.month, nac.day))
+
     def to_dict(self):
-        # Devuelve datos físicos redondeados para respuesta JSON
         return {
+            "fecha_nacimiento": self.fecha_nacimiento.isoformat(),
             "edad": self.edad,
             "peso": self.peso,
             "altura": self.altura,

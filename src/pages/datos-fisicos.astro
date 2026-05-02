@@ -23,9 +23,9 @@ import AppStyles from "./components/appStyles.astro";
 				<form id="datosForm" novalidate>
 					<div class="grid cols-2">
 						<div class="field">
-							<label for="edad">Edad (años)</label>
-							<input type="number" id="edad" name="edad" min="15" max="100" step="1" required />
-							<small class="error" data-error-for="edad"></small>
+							<label for="fecha_nacimiento">Fecha de nacimiento</label>
+							<input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required />
+							<small class="error" data-error-for="fecha_nacimiento"></small>
 						</div>
 						<div class="field">
 							<label for="genero">Género</label>
@@ -89,7 +89,7 @@ import AppStyles from "./components/appStyles.astro";
 					</div>
 					<div>
 						<div class="result-label">Recomendación diaria</div>
-						<div class="result-value accent"><span id="rKcal">—</span> <small>kcal</small></div>
+						<div class="result-value kcal-highlight"><span id="rKcal">—</span> <small>kcal</small></div>
 					</div>
 				</div>
 				<div class="actions">
@@ -104,7 +104,8 @@ import AppStyles from "./components/appStyles.astro";
 			requireAuth();
 
 			type Datos = {
-				edad: number; peso: number; altura: number;
+				fecha_nacimiento: string; edad: number;
+				peso: number; altura: number;
 				genero: string; nivel_actividad: string; objetivo: string;
 				tmb: number; get: number; recomendacion_kcal: number;
 			};
@@ -124,7 +125,7 @@ import AppStyles from "./components/appStyles.astro";
 			};
 
 			api<Datos>("/datos-fisicos", { auth: true }).then(d => {
-				setValue("edad", d.edad);
+				setValue("fecha_nacimiento", d.fecha_nacimiento);
 				setValue("peso", d.peso);
 				setValue("altura", d.altura);
 				setValue("genero", d.genero);
@@ -133,11 +134,28 @@ import AppStyles from "./components/appStyles.astro";
 				showResult(d.tmb, d.get, d.recomendacion_kcal);
 			}).catch(() => { /* sin datos aún */ });
 
+			const calcularEdad = (iso: string): number => {
+				const nac = new Date(iso);
+				const hoy = new Date();
+				let edad = hoy.getFullYear() - nac.getFullYear();
+				const m = hoy.getMonth() - nac.getMonth();
+				if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+				return edad;
+			};
+
 			const validate = (d: Record<string, any>) => {
 				let ok = true;
-				["edad","peso","altura","genero","nivel_actividad","objetivo","form"].forEach(f => setError(f, ""));
+				["fecha_nacimiento","peso","altura","genero","nivel_actividad","objetivo","form"].forEach(f => setError(f, ""));
 
-				if (!(d.edad >= 15 && d.edad <= 100)) { setError("edad", "Edad entre 15 y 100."); ok = false; }
+				if (!d.fecha_nacimiento) {
+					setError("fecha_nacimiento", "Introduce tu fecha de nacimiento.");
+					ok = false;
+				} else {
+					const edad = calcularEdad(d.fecha_nacimiento);
+					const futura = new Date(d.fecha_nacimiento) > new Date();
+					if (futura) { setError("fecha_nacimiento", "La fecha no puede ser futura."); ok = false; }
+					else if (!(edad >= 15 && edad <= 100)) { setError("fecha_nacimiento", "La edad debe estar entre 15 y 100 años."); ok = false; }
+				}
 				if (!(d.peso >= 30 && d.peso <= 250)) { setError("peso", "Peso entre 30 y 250 kg."); ok = false; }
 				if (!(d.altura >= 120 && d.altura <= 220)) { setError("altura", "Altura entre 120 y 220 cm."); ok = false; }
 				if (!d.genero) { setError("genero", "Selecciona un género."); ok = false; }
@@ -150,7 +168,7 @@ import AppStyles from "./components/appStyles.astro";
 				e.preventDefault();
 				const fd = new FormData(form);
 				const data = {
-					edad: Number(fd.get("edad")),
+					fecha_nacimiento: String(fd.get("fecha_nacimiento") ?? ""),
 					peso: Number(fd.get("peso")),
 					altura: Number(fd.get("altura")),
 					genero: String(fd.get("genero") ?? ""),

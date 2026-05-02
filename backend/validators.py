@@ -3,6 +3,7 @@ Módulo de validación de datos de entrada para formularios y API.
 """
 
 import re
+from datetime import date
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
@@ -42,17 +43,24 @@ def validate_login(data: dict):
 
 def validate_datos_fisicos(data: dict):
     try:
-        edad = int(data["edad"])
+        fecha_str = (data.get("fecha_nacimiento") or "").strip()
+        fecha_nacimiento = date.fromisoformat(fecha_str)
         peso = float(data["peso"])
         altura = int(data["altura"])
     except (KeyError, TypeError, ValueError):
-        raise ValidationError("Datos numéricos inválidos.")
+        raise ValidationError("Datos inválidos.")
 
     genero = (data.get("genero") or "").strip().lower()
     nivel = (data.get("nivel_actividad") or "").strip().lower()
     objetivo = (data.get("objetivo") or "").strip().lower()
 
-    _require(15 <= edad <= 100, "Edad fuera de rango (15–100).")
+    hoy = date.today()
+    edad = hoy.year - fecha_nacimiento.year - (
+        (hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day)
+    )
+
+    _require(fecha_nacimiento <= hoy, "La fecha de nacimiento no puede ser futura.")
+    _require(15 <= edad <= 100, "La edad calculada debe estar entre 15 y 100 años.")
     _require(30 <= peso <= 250, "Peso fuera de rango (30–250 kg).")
     _require(120 <= altura <= 220, "Altura fuera de rango (120–220 cm).")
     _require(genero in GENEROS, "Género inválido.")
@@ -60,7 +68,8 @@ def validate_datos_fisicos(data: dict):
     _require(objetivo in OBJETIVOS, "Objetivo inválido.")
 
     return {
-        "edad": edad, "peso": round(peso, 1), "altura": altura,
+        "fecha_nacimiento": fecha_nacimiento, "edad": edad,
+        "peso": round(peso, 1), "altura": altura,
         "genero": genero, "nivel_actividad": nivel, "objetivo": objetivo,
     }
 

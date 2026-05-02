@@ -4,6 +4,7 @@ Módulo principal de la aplicación Flask que maneja las rutas y endpoints de la
 
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 
 from config import Config
@@ -19,6 +20,22 @@ from validators import (
 )
 
 
+def _migrar_edad_a_fecha_nacimiento() -> None:
+    insp = inspect(db.engine)
+    if "datos_fisicos" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("datos_fisicos")}
+    if "fecha_nacimiento" in cols or "edad" not in cols:
+        return
+    with db.engine.begin() as conn:
+        conn.execute(text("ALTER TABLE datos_fisicos ADD COLUMN fecha_nacimiento DATE"))
+        conn.execute(text(
+            "UPDATE datos_fisicos "
+            "SET fecha_nacimiento = date('now', '-' || edad || ' years')"
+        ))
+        conn.execute(text("ALTER TABLE datos_fisicos DROP COLUMN edad"))
+
+
 def create_app(config_class=Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -26,6 +43,7 @@ def create_app(config_class=Config) -> Flask:
 
     db.init_app(app)
     with app.app_context():
+        _migrar_edad_a_fecha_nacimiento()
         db.create_all()
 
     @app.errorhandler(ValidationError)
@@ -88,13 +106,13 @@ def create_app(config_class=Config) -> Flask:
     @login_required
     def save_datos_fisicos():
         data = validate_datos_fisicos(request.get_json(silent=True) or {})
-        
+
         tmb_value = calc_tmb(data["genero"], data["peso"], data["altura"], data["edad"])
         get_value = calc_get(tmb_value, data["nivel_actividad"])
         kcal = recomendacion_kcal(get_value, data["objetivo"])
 
         df = g.usuario.datos_fisicos or DatosFisicos(id_usuario=g.usuario.id_usuario)
-        df.edad = data["edad"]
+        df.fecha_nacimiento = data["fecha_nacimiento"]
         df.peso = data["peso"]
         df.altura = data["altura"]
         df.genero = data["genero"]
@@ -119,6 +137,14 @@ def create_app(config_class=Config) -> Flask:
         peso = validate_peso(request.get_json(silent=True) or {})
         registro = RegistroPeso(id_usuario=g.usuario.id_usuario, peso=peso)
         db.session.add(registro)
+
+        df: DatosFisicos | None = g.usuario.datos_fisicos
+        if df is not None:
+            df.peso = peso
+            df.tmb = calc_tmb(df.genero, peso, df.altura, df.edad)
+            df.get = calc_get(df.tmb, df.nivel_actividad)
+            db.session.add(df)
+
         db.session.commit()
         return jsonify(registro.to_dict()), 201
 
